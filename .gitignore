@@ -1,18 +1,50 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# Vivado generated directories
+.Xil/
+*.cache/
+*.runs/
+*.sim/
+*.gen/
+*.hw/
+*.ip_user_files/
 
-# Other files and folders
-.settings/
+# Vivado generated files
+*.jou
+*.log
+*.str
+*.backup.jou
+*.backup.log
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# Generated FPGA outputs
+*.bit
+*.bin
+*.ltx
+*.dcp
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Simulation files
+*.wdb
+*.wcfg
+*.vcd
+*.vpd
+*.fst
+xsim.dir/
+webtalk/
+*.wlf
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+# Keep project source files
+!*.vhd
+!*.vhdl
+!*.xdc
+!*.tcl
+!*.md
