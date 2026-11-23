@@ -36,7 +36,7 @@ architecture Behavioral of AES_CTR is
     --used to connect aes-ctr to keystream gen
     signal keystream : block_t;     --output keystream
     signal counter_block : block_t; --input nonce & ctr to ctr
-    signal valid_in : std_logic;   --block sent
+    signal valid_in : std_logic := '0';   --block sent
     signal valid_out : std_logic; --block received
     
     --final result (ciphertext or plaintext
@@ -54,11 +54,12 @@ begin
         );
         
     process(clk)
+        variable byte_index : integer;
     begin
         if rising_edge(clk) then
             --finite state machine passing input message through idle --> processing --> finished
             valid_in <= '0';
-            done <= '0';
+            fin <= '0';
             case state is
                 when idle =>
                     --wait on input (when start = 1). Save inputs and calculate # of blocks needed
@@ -66,7 +67,7 @@ begin
                         saved_message <= message_in;
                         message_len <= length;
                         saved_nonce <= nonce;
-                        saved_length <= (length + 15)/16; --take the ceiling of the length/16 (normal vhdl rounds down so add 15 to essentially round up)
+                        total_blocks <= (length + 15)/16; --take the ceiling of the length/16 (normal vhdl rounds down so add 15 to essentially round up)
                         
                         --reset these incase not initial message
                         blocks_sent <= 0;
@@ -74,18 +75,23 @@ begin
                         result <= (others => (others => '0'));
                         
                         --send to next state
-                        state <= PROCESSING;
+                        if length = 0 then
+                            state <= finished;
+                        else
+                            state <= processing;
+                        end if;
+                    end if;
                 when processing =>
                     --generate keystream for nonce & ctr for # of blocks we need for our input message
                     --send in blocks once every clock cycle until we send all blocks needed
                     --once all send, wait until blocks_send == blocks received
                     --if valid_out == '1', then there is a block recieved & we can 
                     --xor message_in(proper bits) w/ keystream block
-                    if blocks_sent < blocks_received then
+                    if blocks_sent < total_blocks then
                         --send another block
-                        counter_block <= (nonce & std_logic_vector(to_unsigned(blocks_sent));
+                        counter_block <= (nonce & std_logic_vector(to_unsigned(blocks_sent,32)));
                         valid_in <= '1';
-                        blocks_sent <= blocks_send+1;
+                        blocks_sent <= blocks_sent+1;
                     end if;
                     if valid_out = '1' then
                         --we have a keystream block, so we can xor with input message byte
@@ -94,13 +100,15 @@ begin
                         for i in 0 to 15 loop
                             byte_index := blocks_received * 16 + i;
                             --When input should have a lot of leading 0's so we can ignore past here, dont need in final result
-                            if byte_index < saved_length then
+                            if byte_index < message_len then
                                 result(byte_index) <= saved_message(byte_index) xor keystream(127-8*i downto 120-8*i);
                             end if;
                         end loop;
                         blocks_received <= blocks_received + 1;
-                        if blocks_received = total_blocks then
+                        if blocks_received+1 = total_blocks then
                             state <= finished;
+                        end if;
+                    end if;
                 when finished =>
                     --send out signals
                     --send out full constructed messaqe and done signal
