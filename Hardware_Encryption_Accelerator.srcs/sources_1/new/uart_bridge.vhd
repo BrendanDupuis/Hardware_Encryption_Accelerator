@@ -22,14 +22,23 @@ entity uart_bridge is
 end uart_bridge;
 
 architecture Behavioral of uart_bridge is
-    signal data : std_logic_vector(7 downto 0);
-    signal valid : std_logic;
-
+    signal rx_data : std_logic_vector(7 downto 0);
+    signal rx_valid : std_logic;
+    signal tx_data : std_logic_vector(7 downto 0);
+    signal tx_valid : std_logic;
+    signal tx_busy : std_logic;
+    signal keygen_in : std_logic_vector(127 downto 0);
+    signal keygen_trigger : std_logic;
+    signal keygen_finished : std_logic := '0';
+    signal keygen_out : std_logic_vector(127 downto 0) := (others => '0');
 begin
 
     rx : entity work.uart_rx
-        port map (clk => sys_clk, din => uart_rxd, dout => data, dvalid => valid);
+        port map (clk => sys_clk, din => uart_rxd, dout => rx_data, dvalid => rx_valid);
+        
+    flow : entity work.control_flow
+        port map (clk => sys_clk, rx_data => rx_data, rx_valid => rx_valid, tx_data => tx_data, tx_valid => tx_valid, tx_busy => tx_busy, keygen_in => keygen_in, keygen_trigger => keygen_trigger, keygen_finished => keygen_finished, keygen_out => keygen_out);
     
     tx : entity work.uart_tx
-        port map (clk => sys_clk, din => data, dvalid => valid, busy => open, dout => uart_txd); --open just means we aint using it here
+        port map (clk => sys_clk, din => tx_data, dvalid => tx_valid, busy => tx_busy, dout => uart_txd); --open just means we aint using it here
 end Behavioral;
